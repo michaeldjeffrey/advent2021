@@ -1,6 +1,8 @@
 use itertools::Itertools;
 use std::{collections::HashMap, fs, str::FromStr};
 
+type PermMap = HashMap<char, char>;
+
 fn part1(input: String) -> i32 {
     input
         .lines()
@@ -48,7 +50,7 @@ impl FromStr for SegNum {
 }
 
 fn part2(input: String) -> i32 {
-    let mut uniq_patterns0 = vec![
+    let patterns_in_order = vec![
         "cagedb".to_string(),  //: 0
         "ab".to_string(),      //: 1
         "gcdfa".to_string(),   //: 2
@@ -59,81 +61,93 @@ fn part2(input: String) -> i32 {
         "dab".to_string(),     //: 7
         "acedgfb".to_string(), //: 8
         "cefabd".to_string(),  //: 9
-    ];
-    uniq_patterns0 = uniq_patterns0
-        .iter_mut()
-        .map(|s| s.chars().sorted().collect::<String>())
+    ]
+    .iter_mut()
+    .map(sort_string)
+    .collect_vec();
+
+    let sorted_patterns = sorted(&patterns_in_order);
+    let plain = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].iter().collect_vec();
+
+    return input
+        .lines()
+        .map(|line| {
+            let tester = SegNum::from_str(line).unwrap();
+            return ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+                .iter()
+                .permutations(7)
+                .find_map(|perm| {
+                    // Find the permutation where the sorted results equal the sorted known patterns
+                    let perm_map = make_map_with_perm(&plain, &perm);
+                    let new_left = apply_perm_map(&perm_map, &tester.left);
+                    if all_elements_equal(&sorted_patterns, &new_left) {
+                        Some(perm_map)
+                    } else {
+                        None
+                    }
+                })
+                .and_then(|perm_map| {
+                    // Take the good perm_map and apply it to the answer
+                    let ans = tester
+                        .right
+                        .iter()
+                        .map(|s| {
+                            let cleaned = clue_from_perm_map(&perm_map, s);
+                            let num = patterns_in_order
+                                .iter()
+                                .position(|r| r == &cleaned)
+                                .unwrap();
+                            num
+                        })
+                        .join("")
+                        .parse::<i32>()
+                        .unwrap();
+
+                    return Some(ans);
+                })
+                .unwrap();
+        })
+        .sum();
+}
+
+fn sorted(l: &Vec<String>) -> Vec<String> {
+    let mut l2 = l.clone();
+    l2.sort();
+    return l2;
+}
+
+fn sort_string(s: &mut String) -> String {
+    s.chars().sorted().collect()
+}
+
+fn apply_perm_map(perm_map: &HashMap<char, char>, left: &Vec<String>) -> Vec<String> {
+    return left
+        .iter()
+        .map(|s| clue_from_perm_map(&perm_map, s))
+        .sorted()
         .collect_vec();
+}
 
-    let mut uniq_patterns = uniq_patterns0.clone();
-    uniq_patterns.sort();
+fn all_elements_equal(left: &Vec<String>, right: &Vec<String>) -> bool {
+    left.iter().zip(right).all(|(l, r)| l == r)
+}
 
-    let mut all_ans = vec![];
-
-    let mut seg_nums = input.lines().map(SegNum::from_str).collect_vec();
-    for t in seg_nums.iter_mut() {
-        if let Ok(tester) = t {
-            // println!("{:?}", tester);
-
-            let plain = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].iter().collect_vec();
-
-            for perm in ['a', 'b', 'c', 'd', 'e', 'f', 'g'].iter().permutations(7) {
-                let mut map = HashMap::new();
-                for (&&key, &val) in plain.iter().zip(perm) {
-                    map.insert(val, key);
-                }
-
-                let mut new_clues = vec![];
-                for s in &tester.left {
-                    let mut x = vec![];
-                    for c in s.chars() {
-                        x.push(*map.get(&c).unwrap());
-                    }
-                    x.sort();
-                    let a = x.iter().collect::<String>();
-                    new_clues.push(a);
-                }
-
-                let good = &uniq_patterns;
-
-                new_clues.sort();
-                let is_good = good.iter().zip(new_clues.iter()).all(|(l, r)| {
-                    let eq = l == r;
-                    // if eq {
-                    // println!("{:?} , {:?} == {:?}", l, r, eq);
-                    // }
-                    eq
-                });
-                if is_good {
-                    let mut rightside = vec![];
-                    for d in &tester.right {
-                        let mut pre_cleaned = vec![];
-                        for c in d.chars() {
-                            pre_cleaned.push(*map.get(&c).unwrap());
-                        }
-                        pre_cleaned.sort();
-                        let cleaned = pre_cleaned.iter().collect::<String>();
-
-                        let num = uniq_patterns0
-                            .iter()
-                            .position(|r| {
-                                let eq = r == &cleaned;
-                                // println!("{:?} == {:?}, {:?}", eq, r, &cleaned);
-                                eq
-                            })
-                            .unwrap();
-                        // println!("{:?}", num);
-                        rightside.push(num.to_string());
-                    }
-                    let ans = rightside.join("").parse::<i32>().unwrap();
-                    all_ans.push(ans);
-                    println!("decoded: {:?}", ans);
-                }
-            }
-        }
+fn clue_from_perm_map(perm_map: &PermMap, string: &String) -> String {
+    let mut x = vec![];
+    for c in string.chars() {
+        x.push(*perm_map.get(&c).unwrap());
     }
+    x.sort();
+    let a = x.iter().collect::<String>();
+    return a;
+}
 
-    all_ans.iter().sum()
+fn make_map_with_perm(base: &Vec<&char>, perm: &Vec<&char>) -> PermMap {
+    let mut map = HashMap::new();
+    for (&&key, &&val) in base.iter().zip(perm) {
+        map.insert(val, key);
+    }
+    map
 }
 
 fn main() {
