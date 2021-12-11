@@ -1,6 +1,7 @@
 use itertools::{iterate, Itertools};
 use std::{collections::HashMap, fs};
 
+const SIZE: isize = 10;
 const DIRECTIONS: [(isize, isize); 8] = [
     (-1, -1), // up-left
     (-1, 0),  // up
@@ -18,7 +19,7 @@ fn inc_energy(map: &mut Mapping) -> i32 {
     let mut flashes = 0;
     let mut positions = map.clone().into_keys().collect_vec();
     while let Some(pos) = positions.pop() {
-        let val = map.entry(pos).or_insert(0);
+        let val = map.get_mut(&pos).unwrap();
         *val += 1;
         if *val == 10 {
             flashes += 1;
@@ -29,7 +30,7 @@ fn inc_energy(map: &mut Mapping) -> i32 {
 }
 
 fn reset_flashed(map: &mut Mapping) {
-    for (_, val) in map {
+    for val in map.values_mut() {
         if *val > 9 {
             *val = 0;
         }
@@ -41,10 +42,10 @@ fn get_neighbors((y, x): &(usize, usize)) -> Vec<(usize, usize)> {
         .iter()
         .map(|(dy, dx)| (*y as isize + *dy, *x as isize + *dx))
         .filter_map(|(y, x)| {
-            if x < 0 || x >= 10 {
+            if x < 0 || x >= SIZE {
                 return None;
             }
-            if y < 0 || y >= 10 {
+            if y < 0 || y >= SIZE {
                 return None;
             }
             return Some((y as usize, x as usize));
