@@ -28,14 +28,7 @@ fn part2(lines: Vec<Chars>) -> i64 {
                             ('(', ')') => continue,
                             ('<', '>') => continue,
                             ('[', ']') => continue,
-                            (expected, found) => {
-                                let score = part1_score(c);
-                                println!(
-                                    "expected: {}, found: {}, score: {}",
-                                    expected, found, score
-                                );
-                                return None;
-                            }
+                            _ => return None,
                         }
                     }
                     _ => panic!("wat"),
@@ -48,17 +41,14 @@ fn part2(lines: Vec<Chars>) -> i64 {
                 .clone()
                 .iter()
                 .rev()
-                .map(into_pair)
                 .map(part2_score)
                 .fold(0, |acc, num| (5 * acc) + num)
         })
         .collect_vec();
     let len = scores.iter().len();
     scores.sort();
-    let pos = (len - 1) / 2;
-    println!("[{}] {:?}", pos, scores);
-
-    scores[pos]
+    let midpoint = (len - 1) / 2;
+    scores[midpoint]
 }
 
 fn part1(lines: Vec<Chars>) -> i32 {
@@ -89,22 +79,12 @@ fn part1(lines: Vec<Chars>) -> i32 {
     return result;
 }
 
-fn into_pair(c: &char) -> char {
+fn part2_score(c: &char) -> i64 {
     match c {
-        '(' => ')',
-        '[' => ']',
-        '{' => '}',
-        '<' => '>',
-        _ => panic!("invalid input"),
-    }
-}
-
-fn part2_score(c: char) -> i64 {
-    match c {
-        ')' => 1,
-        ']' => 2,
-        '}' => 3,
-        '>' => 4,
+        '(' => 1,
+        '[' => 2,
+        '{' => 3,
+        '<' => 4,
         _ => panic!("invalid input"),
     }
 }
