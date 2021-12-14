@@ -13,15 +13,24 @@ fn main() {
     let start = &String::from("start");
 
     let mut part_1 = 0;
-    for cave in system.get(start).unwrap().clone() {
-        let visited: Visited = vec![start];
-        explore(cave, visited, &system, part_1_can_continue, &mut part_1);
-    }
-
     let mut part_2 = 0;
+    let empty = &Vec::new();
     for cave in system.get(start).unwrap().clone() {
-        let visited: Visited = vec![start];
-        explore(cave, visited, &system, part_2_can_continue, &mut part_2);
+        let visited = new_visited_with(&empty, &start);
+        explore(
+            cave.clone(),
+            visited.clone(),
+            &system,
+            part_1_can_continue,
+            &mut part_1,
+        );
+        explore(
+            cave.clone(),
+            visited.clone(),
+            &system,
+            part_2_can_continue,
+            &mut part_2,
+        );
     }
 
     println!("Part 1 : {:?}", part_1);
@@ -44,12 +53,21 @@ fn explore(
         return;
     }
 
-    let neighbors = system.get(&cave).unwrap().clone();
-    for neighbor in neighbors {
-        let mut new_visited = visited.clone();
-        new_visited.push(&cave);
-        explore(neighbor, new_visited, system, can_continue_fn, ends);
+    for neighbor in system.get(&cave).unwrap().iter() {
+        explore(
+            neighbor.clone(),
+            new_visited_with(&visited, &cave),
+            system,
+            can_continue_fn,
+            ends,
+        );
     }
+}
+
+fn new_visited_with<'a>(visited: &'a Vec<&String>, cave: &'a String) -> Vec<&'a String> {
+    let mut n = visited.clone();
+    n.push(cave);
+    return n;
 }
 
 fn part_1_can_continue(cave: &String, visited: &Vec<&String>) -> bool {
